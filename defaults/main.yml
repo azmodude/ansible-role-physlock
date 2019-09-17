@@ -1,0 +1,24 @@
+---
+physlock_requirements:
+  Ubuntu:
+    - libpam0g
+    - systemd
+  Fedora:
+    - pam
+    - systemd
+
+physlock_build_requirements:
+  Ubuntu:
+    - libpam0g-dev
+    - libsystemd-dev
+  Fedora:
+    - pam-devel
+    - systemd-devel
+
+common_build_requirements:
+  Ubuntu:
+    - build-essential
+  Fedora:
+    - "@Development Tools"
+
+physlock_remove_build_requirements: true

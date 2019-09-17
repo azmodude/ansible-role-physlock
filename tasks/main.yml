@@ -1,0 +1,56 @@
+---
+# tasks file for ansible-role-physlock
+- name: Check whether physlock is already present on the system
+  stat:
+    path: /usr/local/bin/physlock
+  register: physlock_installed
+
+- name: Only run when physlock is not installed
+  block:
+    - name: Install (build) requirements
+      block:
+        - name: Install requirements
+          package:
+            name: "{{ physlock_requirements[ansible_distribution] }}"
+        - name: Install build requirements
+          package:
+            name: "{{ physlock_build_requirements[ansible_distribution] }}"
+        - name: Install common build requirements
+          package:
+            name: "{{ common_build_requirements[ansible_distribution] }}"
+      become: true
+
+    - name: Clone physlock repository
+      git:
+        clone: true
+        dest: /tmp/physlock-git
+        repo: https://github.com/muennich/physlock.git
+    - name: Build physlock
+      command: make -j{{ ansible_processor_vcpus }} PREFIX=/usr/local install
+      args:
+        chdir: /tmp/physlock-git
+        creates: /usr/local/bin/physlock
+      become: true
+    - name: Copy physlock pam configuration
+      copy:
+        src: /tmp/physlock-git/physlock.pam
+        dest: /etc/pam.d/physlock
+        owner: root
+        group: root
+        mode: 0600
+        remote_src: true
+      become: true
+
+    - name: Clean git checkout directory
+      file:
+        state: absent
+        path: /tmp/physlock-git
+      become: true
+    - name: Remove build requirements
+      package:
+        name: "{{ physlock_build_requirements[ansible_distribution] }}"
+        state: absent
+      become: true
+      when: physlock_remove_build_requirements
+  when: not physlock_installed.stat.exists
+
